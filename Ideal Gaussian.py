@@ -1,6 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# import our lovely libraries
+import sys
+sys.path.append("./lib")
+import Pulses
+
 #-------------------------------------------------------------
 # Time axis 
 f_s = 1e9                  # Sampling frequency: 1 GHz
@@ -17,11 +22,7 @@ center = T_rev / 2.0       # Center of the first pulse
 
 #--------------------------------------------------------------
 # Generate all pulses
-signal_ideal = np.zeros_like(time)
-num_pulses = int(t_end / T_rev) + 1
-for i in range(num_pulses):
-    pulse_center = center + i * T_rev
-    signal_ideal += np.exp(-0.5 * ((time - pulse_center) / sigma)**2)
+signal_ideal = Pulses.GaussianTrain( time, sigma, f_rev, T0=center )
 
 # -------------------------------------------------------------
 
