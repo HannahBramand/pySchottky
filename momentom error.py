@@ -13,25 +13,16 @@ signal_amplitude = np.ones(num_turns)
 ideal, shifted = get_momentum_data(f_rev, num_turns, slip_fac_eta, dp_p)
 
 #--------------------------------
+plt.stem(pass_times *1e6, signal_amplitude, linefmt='r-', label="ideal particle")
+plt.plot(pass_times *1e6, signal_amplitude ,color='red' , linestyle='--' , alpha=0.5)
+plt.stem(pass_times2 *1e6, signal_amplitude, linefmt='b-', label=r"off-momentum particle $\delta$="+"%g [x10$^{-3}$]"%(momentom_error*1E3))
+plt.plot(pass_times2 *1e6, signal_amplitude ,color='blue' , linestyle='--' , alpha=0.5)
 
-plt.figure(figsize=(10, 7))
-
-#plot ideal
-plt.subplot(2,1,1)
-plt.stem(ideal * 1e6, signal_amplitude, linefmt='g-', label='Ideal')
-plt.plot(ideal * 1e6, signal_amplitude, color='green', linestyle='--', alpha=0.5)
-plt.title("Single Ideal Particle")
-plt.ylabel("Amplitude")
+plt.title("Single Particle ")
 plt.grid(True)
-
-#plot dp_p error
-plt.subplot(2,1,2)
-plt.stem(shifted * 1e6, signal_amplitude, linefmt='b-', label='With Error')
-plt.plot(shifted * 1e6, signal_amplitude, color='blue', linestyle='--', alpha=0.5)
-plt.title("Momentum Error Effect")
-plt.xlabel("Time (µs)")
+plt.xlabel(r"time [$\mu$s]")
 plt.ylabel("Amplitude")
-plt.grid(True)
+plt.legend()
 
 plt.tight_layout()
 plt.show()
