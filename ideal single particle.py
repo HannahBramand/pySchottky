@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.fft import fft, ifft
 
 # Step 1
 
@@ -8,10 +7,7 @@ from scipy.fft import fft, ifft
 f_rev = 1e6                # sampling freq: 1 MHz
 T_rev = 1.0 / f_rev        # time of complete round : 1 micro s
 num_turns = 5              # number of turns in the loop
-slip_fac = -0.1
-momentom_error = 0.001
 
-T_momentom = T_rev * (1+ slip_fac * momentom_error)
 
 pass_times = np.arange(1, num_turns + 1) * T_rev
 
@@ -19,7 +15,6 @@ pass_times = np.arange(1, num_turns + 1) * T_rev
 #with the exact data. for now it only shows 1 for all.
 
 signal_amplitude = np.ones(num_turns)
-
 
 #---------------------------------------------
 
