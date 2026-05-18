@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from lib.P_error import get_momentum_data
 
 f_rev = 1e6               
-num_turns = 128          
+num_turns = 124          
 slip_fac_eta = 0.2         
 dp_p = [0.0, 0.1, -0.1]    
 myColors = ["r", "b", "g", "c", "m", "k"]
@@ -32,7 +32,7 @@ for ii in range(len(pass_times)):
     #ax2.plot(dt * 1e6, dp_p0, color=myColors[ii], alpha=0.3, linestyle='--')
 
 
-ax1.set_title("Time Domain Signal for Three individual particles")
+ax1.set_title("Time Domain Signal for Three individual particles (No RF)")
 ax1.set_ylabel("Amplitude")
 
 ax1.set_xlim(0, (num_turns + 5) * (1.0 / f_rev) * (1 + slip_fac_eta * 0.1) * 1e6)
