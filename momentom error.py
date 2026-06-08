@@ -17,6 +17,8 @@ pass_times = get_momentum_data(f_rev, num_turns, slip_fac_eta, dp_p)
 for ii in range(len(pass_times)):
     plt.stem(pass_times[ii]*1e6, signal_amplitude, linefmt="%s-"%(myColors[ii]))
     plt.plot(pass_times[ii]*1e6, signal_amplitude, color=myColors[ii])
+
+    
 # plt.stem(ideal *1e6, signal_amplitude, linefmt='r-', label="ideal particle")
 # plt.plot(ideal *1e6, signal_amplitude ,color='red' , linestyle='--' , alpha=0.5)
 # plt.stem(shifted *1e6, signal_amplitude, linefmt='b-', label=r"off-momentum particle $\delta$="+"%g [x10$^{-3}$]"%(dp_p*1E3))
