@@ -3,13 +3,14 @@ import re
 import os
 import gc
 import matplotlib.pyplot as plt
+import argparse
 
 # ******************************************************
 #                   1. PARAMETERS
 # ******************************************************
 
 GAMMA_T = 1.971            # Transition Gamma for CNAO
-F_A = 5.0 / 3.0            # Fractional Betatron Tune (Proton)
+F_A = 5.0 / 3.0            # Fractional Betatron Tune 
 DP_P_MAX = 1e-3            # Momentum spread
 DA_A_MAX = 0.1             # Transverse modulation depth
 F_W = 10e3                 # Longitudinal modulation frequency
@@ -49,11 +50,7 @@ def parse_carbon_file(filepath):
 #              3. SIGNAL GENERATOR MOTOR (Updated with Plotting)
 # ******************************************************
 
-def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron, enable_momentum, add_noise):
-    
-    # ساختن پوشه برای عکس‌ها
-    plots_dir = os.path.join(OUTPUT_DIR, "Plots")
-    os.makedirs(plots_dir, exist_ok=True)
+def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron, enable_momentum, add_noise, lPlot=True):
     
     # Calculate exact physical slip factor (sigma)
     eta = 1.0 / gamma**2 - 1.0 / GAMMA_T**2
@@ -70,6 +67,10 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
     # If no transverse oscillation, we need a baseline amplitude to see the longitudinal shifts
     A0 = 0.0 if enable_betatron else 1.0    
 
+    delta_t_history = []
+    delta_p_p_history = []
+    # -------------------------------------------------------
+
     T_new = 0.0
     for n in range(num_turns):
         t_ideal = (n + 1) * T_rev  
@@ -79,6 +80,10 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
         T_new = T_new - T_rev * eta * current_dp
         absolute_time = t_ideal + T_new  
         
+        delta_t_history.append(T_new)
+        delta_p_p_history.append(current_dp / DP_P_MAX if DP_P_MAX > 0 else 0) 
+        # ----------------------------------------
+
         # Transverse dynamics
         current_amplitude = A0 + dA_A * np.sin(2 * np.pi * F_A * f_rev * absolute_time)
         
@@ -110,61 +115,84 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
     amps_masked = amplitude_spectrum[mask]
 
     # ---------------------------------------------------------
-    #                     PLOTTING ENGINE
+    #                     PLOTTING ENGINE (Updated for 4 plots and Control)
+    # ---------------------------------------------------------
+    if lPlot:
+        plots_dir = os.path.join(OUTPUT_DIR, "Plots")
+        os.makedirs(plots_dir, exist_ok=True)
+
+        fig, axs = plt.subplots(4, 1, figsize=(12, 20)) 
+        
+        zoom_time = 5 * T_rev
+        mask_time = t_digital <= zoom_time
+        axs[0].plot(t_digital[mask_time] * 1e6, sensor_signal[mask_time], color='magenta', linewidth=1.5)
+        axs[0].set_title(f'Time Domain: First 5 Turns ({state_name})', fontsize=14, fontweight='bold')
+        axs[0].set_xlabel('Time (us)')
+        axs[0].set_ylabel('Amplitude')
+        axs[0].grid(True, linestyle='--', alpha=0.6)
+
+        freqs_mhz = freqs_masked / 1e6
+        axs[1].plot(freqs_mhz, amps_masked, color='magenta', linewidth=1)
+        axs[1].set_title('Frequency Domain: Full Spectrum (0 to 5 MHz)', fontsize=14, fontweight='bold')
+        axs[1].set_xlabel('Frequency (MHz)')
+        axs[1].set_ylabel('Normalized Amplitude')
+        axs[1].set_xlim(0, 5)
+        axs[1].grid(True, linestyle='--', alpha=0.6)
+
+        mask_no_dc = freqs_mhz > 0.1 
+        if np.any(mask_no_dc): 
+            max_peak_freq = freqs_mhz[mask_no_dc][np.argmax(amps_masked[mask_no_dc])]
+            span_mhz = 0.05  
+            mask_zoom = (freqs_mhz >= max_peak_freq - span_mhz) & (freqs_mhz <= max_peak_freq + span_mhz)
+            
+            axs[2].plot(freqs_mhz[mask_zoom], amps_masked[mask_zoom], color='magenta', linewidth=1.5)
+            axs[2].set_title(f'Smart Zoomed FFT: Centered around {max_peak_freq:.3f} MHz', fontsize=14, fontweight='bold')
+            axs[2].set_xlabel('Frequency (MHz)')
+            axs[2].set_ylabel('Amplitude')
+            axs[2].grid(True, linestyle='--', alpha=0.6)
+        else:
+            axs[2].set_title("Smart Zoomed FFT: No Significant Peak Found")
+
+        axs[3].plot(np.array(delta_t_history) * 1e9, delta_p_p_history, color='magenta', marker='.', linestyle='', markersize=3, alpha=0.5)
+        axs[3].set_title(f'Longitudinal Phase Space: {state_name}', fontsize=14, fontweight='bold')
+        axs[3].set_xlabel('Time Deviation Δt (ns)')
+        axs[3].set_ylabel('Normalized Momentum Deviation (Δp/p) / (Δp/p)_max')
+        axs[3].grid(True, linestyle='--', alpha=0.6)
+        # ----------------------------------------------
+      
+        plt.tight_layout()
+        plot_filename = os.path.join(plots_dir, f"Carbon_{int(energy)}MeV_{state_name}.png")
+        plt.savefig(plot_filename, dpi=150)
+        plt.close(fig)  
     # ---------------------------------------------------------
 
-    fig, axs = plt.subplots(3, 1, figsize=(12, 16))
-    
-    
-    zoom_time = 5 * T_rev
-    mask_time = t_digital <= zoom_time
-    axs[0].plot(t_digital[mask_time] * 1e6, sensor_signal[mask_time], color='magenta', linewidth=1.5)
-    axs[0].set_title(f'Time Domain: First 5 Turns ({state_name})', fontsize=14, fontweight='bold')
-    axs[0].set_xlabel('Time (us)')
-    axs[0].set_ylabel('Amplitude')
-    axs[0].grid(True, linestyle='--', alpha=0.6)
-
-   
-    freqs_mhz = freqs_masked / 1e6
-    axs[1].plot(freqs_mhz, amps_masked, color='magenta', linewidth=1)
-    axs[1].set_title('Frequency Domain: Full Spectrum (0 to 5 MHz)', fontsize=14, fontweight='bold')
-    axs[1].set_xlabel('Frequency (MHz)')
-    axs[1].set_ylabel('Normalized Amplitude')
-    axs[1].set_xlim(0, 5)
-    axs[1].grid(True, linestyle='--', alpha=0.6)
-
-    mask_no_dc = freqs_mhz > 0.1 
-    
-    max_peak_freq = freqs_mhz[mask_no_dc][np.argmax(amps_masked[mask_no_dc])]
-    
-    span_mhz = 0.05  
-    mask_zoom = (freqs_mhz >= max_peak_freq - span_mhz) & (freqs_mhz <= max_peak_freq + span_mhz)
-    
-    axs[2].plot(freqs_mhz[mask_zoom], amps_masked[mask_zoom], color='magenta', linewidth=1.5)
-    axs[2].set_title(f'Smart Zoomed FFT: Centered around {max_peak_freq:.3f} MHz', fontsize=14, fontweight='bold')
-    axs[2].set_xlabel('Frequency (MHz)')
-    axs[2].set_ylabel('Amplitude')
-    axs[2].grid(True, linestyle='--', alpha=0.6)
-  
-    plt.tight_layout()
-    plot_filename = os.path.join(plots_dir, f"Carbon_{int(energy)}MeV_{state_name}.png")
-    plt.savefig(plot_filename, dpi=150)
-    plt.close(fig)  
-    # ---------------------------------------------------------
-
-    # Save to CSV
-    filename = os.path.join(OUTPUT_DIR, f"carbon{int(energy)}MeV_{state_name}.csv")
+    filename = os.path.join(OUTPUT_DIR, f"Carbon{int(energy)}MeV_{state_name}.csv")
     data_to_save = np.column_stack((freqs_masked, amps_masked))
     np.savetxt(filename, data_to_save, delimiter=",", header="Frequency_Hz,Normalized_Amplitude", comments="")
     
     del t_digital, sensor_signal, freqs, fft_values, amplitude_spectrum, freqs_masked, amps_masked, data_to_save
+    del delta_t_history, delta_p_p_history
     gc.collect()
 
 
 # ******************************************************
-#                 4. MAIN EXECUTION LOOP
+#                 4. MAIN EXECUTION LOOP (Updated for Command Line Control)
 # ******************************************************
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate Schottky Signal Datasets.")
+    
+    parser.add_argument('--no-plot', action='store_false', dest='lPlot',
+                        help='Plotting is enabled by default.')
+    parser.set_defaults(lPlot= True)
+
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+ ######## if you want plot turn the upper on to TRUE... :)
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+    args = parser.parse_args()
+    
+    print(f"--- Dataset Generation Started (Plotting is {'ENABLED' if args.lPlot else 'DISABLED'}) ---")
+
     current_folder = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(current_folder, "carbon.txt")
     
@@ -188,6 +216,7 @@ if __name__ == "__main__":
         
         for state in states:
             print(f"  -> Generating {state['name']}...", end="", flush=True)
+
             generate_and_save_dataset(
                 energy=energy, 
                 f_rev=f_rev, 
@@ -195,7 +224,8 @@ if __name__ == "__main__":
                 state_name=state['name'], 
                 enable_betatron=state['beta'], 
                 enable_momentum=state['mom'], 
-                add_noise=state['noise']
+                add_noise=state['noise'],
+                lPlot=args.lPlot 
             )
             print(" Done.")
             
