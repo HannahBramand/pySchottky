@@ -27,7 +27,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 #                  2. Extracting Data
 # ******************************************************
 
-def parse_proton_file(filepath):
+def parse_carbon_file(filepath):
     print(f"Reading physics data from {filepath}...")
     with open(filepath, 'r') as f:
         text = f.read()
@@ -61,7 +61,7 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
 
     dp_p = DP_P_MAX if enable_momentum else 0.0
     dA_A = DA_A_MAX if enable_betatron else 0.0
-    A0 = 0.0 if enable_betatron else 1.0    
+    A0 = 1.0   
 
     delta_t_history = []
     delta_p_p_history = []
@@ -112,14 +112,14 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
         axs[1].grid(True, linestyle='--', alpha=0.6)
       
         plt.tight_layout()
-        plot_filename = os.path.join(plots_dir, f"proton_{int(energy)}MeV_{state_name}_TimeDomain.png")
+        plot_filename = os.path.join(plots_dir, f"carbon_{int(energy)}MeV_{state_name}_TimeDomain.png")
         plt.savefig(plot_filename, dpi=150)
         plt.close(fig)  
 
     # ---------------------------------------------------------
     #                     SAVING DATASET (Time Domain)
     # ---------------------------------------------------------
-    filename = os.path.join(OUTPUT_DIR, f"proton{int(energy)}MeV_{state_name}_Time.csv")
+    filename = os.path.join(OUTPUT_DIR, f"carbon{int(energy)}MeV_{state_name}_Time.csv")
     data_to_save = np.column_stack((t_digital, sensor_signal))
     
     # Save purely Time vs Amplitude
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     print(f"--- Dataset Generation Started (Plotting is {'ENABLED' if args.lPlot else 'DISABLED'}) ---")
 
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_folder, "proton.txt")
+    file_path = os.path.join(current_folder, "carbon.txt")
     
-    params = parse_proton_file(file_path)
+    params = parse_carbon_file(file_path)
     
     for p in params:
         energy = p['energy']
