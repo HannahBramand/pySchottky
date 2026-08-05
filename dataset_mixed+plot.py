@@ -19,7 +19,7 @@ SIGMA_T = 70e-9            # Pulse width
 TOTAL_TIME = 1e-3          # 1 ms simulation
 F_S = 200e6                # Sampling frequency (200 MHz is safe for RAM and high resolution)
 DT = 1.0 / F_S
-OUTPUT_DIR = "ML_Datasets"
+OUTPUT_DIR = "/home/hannah/pySchottky/ML_Datasets"
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -27,7 +27,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 #                  2. Extracting Data
 # ******************************************************
 
-def parse_carbon_file(filepath):
+def parse_proton_file(filepath):
     print(f"Reading physics data from {filepath}...")
     with open(filepath, 'r') as f:
         text = f.read()
@@ -65,7 +65,7 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
     dA_A = DA_A_MAX if enable_betatron else 0.0
     
     # If no transverse oscillation, we need a baseline amplitude to see the longitudinal shifts
-    A0 = 0.0 if enable_betatron else 1.0    
+    A0 = 1.0
 
     delta_t_history = []
     delta_p_p_history = []
@@ -161,12 +161,12 @@ def generate_and_save_dataset(energy, f_rev, gamma, state_name, enable_betatron,
         # ----------------------------------------------
       
         plt.tight_layout()
-        plot_filename = os.path.join(plots_dir, f"Carbon_{int(energy)}MeV_{state_name}.png")
+        plot_filename = os.path.join(plots_dir, f"proton_{int(energy)}MeV_{state_name}.png")
         plt.savefig(plot_filename, dpi=150)
         plt.close(fig)  
     # ---------------------------------------------------------
 
-    filename = os.path.join(OUTPUT_DIR, f"Carbon{int(energy)}MeV_{state_name}.csv")
+    filename = os.path.join(OUTPUT_DIR, f"proton{int(energy)}MeV_{state_name}.csv")
     data_to_save = np.column_stack((freqs_masked, amps_masked))
     np.savetxt(filename, data_to_save, delimiter=",", header="Frequency_Hz,Normalized_Amplitude", comments="")
     
@@ -194,9 +194,9 @@ if __name__ == "__main__":
     print(f"--- Dataset Generation Started (Plotting is {'ENABLED' if args.lPlot else 'DISABLED'}) ---")
 
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_folder, "carbon.txt")
+    file_path = os.path.join(current_folder, "proton.txt")
     
-    params = parse_carbon_file(file_path)
+    params = parse_proton_file(file_path)
     
     for p in params:
         energy = p['energy']
